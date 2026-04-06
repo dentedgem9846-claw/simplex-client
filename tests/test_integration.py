@@ -26,7 +26,7 @@ pytestmark = pytest.mark.integration
 # Helpers
 # ---------------------------------------------------------------------------
 
-async def _wait_for_event(queue: asyncio.Queue, timeout: float = 15.0):
+async def _wait_for_event(queue: asyncio.Queue, timeout: float = 60.0):
     """Wait for an item from a queue with a timeout."""
     return await asyncio.wait_for(queue.get(), timeout=timeout)
 
@@ -101,6 +101,7 @@ async def test_list_groups_empty(simplex_bot1):
         assert isinstance(groups, list)
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_two_bots_exchange_messages(simplex_bot1, simplex_bot2):
     """Full end-to-end: two bots connect and exchange messages.
@@ -149,8 +150,8 @@ async def test_two_bots_exchange_messages(simplex_bot1, simplex_bot2):
         # Bot2 connects to bot1's address
         await client2.connect_contact(user2.user_id, contact_link)
 
-        # Wait for bot1 to see the new contact
-        contact_event = await _wait_for_event(connected_to_bot1, timeout=30.0)
+        # Wait for bot1 to see the new contact (e2e connection via SMP servers)
+        contact_event = await _wait_for_event(connected_to_bot1, timeout=90.0)
         assert contact_event.contact.contact_id > 0
 
         # Give connection time to fully establish
@@ -188,6 +189,7 @@ async def test_two_bots_exchange_messages(simplex_bot1, simplex_bot2):
         assert reply.chat_item.content.text == reply_message
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_send_and_receive_multiple_messages(simplex_bot1, simplex_bot2):
     """Send several messages in sequence and verify all are received in order."""
@@ -210,7 +212,7 @@ async def test_send_and_receive_multiple_messages(simplex_bot1, simplex_bot2):
         contacts2 = await client2.list_contacts(user2.user_id)
         if not contacts2:
             await client2.connect_contact(user2.user_id, contact_link)
-            await _wait_for_event(connected, timeout=30.0)
+            await _wait_for_event(connected, timeout=90.0)
             await asyncio.sleep(2)
             contacts2 = await client2.list_contacts(user2.user_id)
 
@@ -260,6 +262,7 @@ async def test_create_group(simplex_bot1):
         assert group_info.group_id in group_ids
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_event_handler_receives_contact_connected(simplex_bot1, simplex_bot2):
     """Verify the contactConnected event fires when a new contact connects."""
@@ -284,7 +287,7 @@ async def test_event_handler_receives_contact_connected(simplex_bot1, simplex_bo
 
         await client2.connect_contact(user2.user_id, addr.contact_link)
 
-        event_type = await _wait_for_event(events_received, timeout=30.0)
+        event_type = await _wait_for_event(events_received, timeout=90.0)
         assert event_type == "contactConnected"
 
 

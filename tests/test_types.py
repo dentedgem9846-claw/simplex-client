@@ -260,7 +260,7 @@ class TestUserContactLink:
                 },
             }
         )
-        assert ucl.contact_link == "https://simplex.chat/short"
+        assert ucl.contact_link == "https://simplex.chat/full"
 
 
 class TestComposedMessage:

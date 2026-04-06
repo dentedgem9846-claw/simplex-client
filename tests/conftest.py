@@ -15,12 +15,20 @@ def docker_compose_file(pytestconfig: pytest.Config) -> Path:
 
 
 def is_ws_responsive(host: str, port: int) -> bool:
+    import json
     try:
         loop = asyncio.new_event_loop()
 
         async def check() -> bool:
-            async with websockets.asyncio.client.connect(f"ws://{host}:{port}"):
-                return True
+            async with websockets.asyncio.client.connect(
+                f"ws://{host}:{port}", open_timeout=5
+            ) as ws:
+                # Send a command to verify the server is actually ready
+                await ws.send(json.dumps({"corrId": "health", "cmd": "/user"}))
+                resp = await asyncio.wait_for(ws.recv(), timeout=5)
+                data = json.loads(resp)
+                # Accept either a response or event — server is alive
+                return "resp" in data or "corrId" in data
 
         result = loop.run_until_complete(check())
         loop.close()

@@ -29,6 +29,7 @@ asyncio_mode = "auto"
 markers = [
     "unit: unit tests",
     "integration: integration tests requiring Docker",
+    "slow: tests requiring network connectivity to SMP relay servers (may take >90s)",
 ]
 
 [tool.hatch.build.targets.wheel]

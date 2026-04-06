@@ -73,7 +73,7 @@ def add_contact(user_id: int, incognito: bool = False) -> str:
 
 
 def connect(user_id: int, link: str) -> str:
-    return f"/_connect {user_id} {link}"
+    return f"/connect {link}"
 
 
 def connect_plan(user_id: int, link: str) -> str:
@@ -97,10 +97,9 @@ def list_contacts(user_id: int) -> str:
 
 
 def list_groups(user_id: int, search: str | None = None) -> str:
-    cmd = f"/_groups {user_id}"
     if search:
-        cmd += f" {search}"
-    return cmd
+        return f"/_groups {user_id} {search}"
+    return "/groups"
 
 
 def delete_chat(chat_ref: str, mode: str = "full") -> str:

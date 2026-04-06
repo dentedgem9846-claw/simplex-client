@@ -276,7 +276,11 @@ class SimplexClient:
     async def create_address(self, user_id: int) -> UserContactLink:
         resp = await self.send_command(cmd.create_address(user_id))
         self._check_error(resp)
-        return UserContactLink.model_validate(resp.get("contactLink", resp))
+        # Response type is "userContactLinkCreated" with connLinkContact at top level
+        if "contactLink" in resp:
+            return UserContactLink.model_validate(resp["contactLink"])
+        # Build a UserContactLink from the flat response fields
+        return UserContactLink.model_validate(resp)
 
     async def delete_address(self, user_id: int) -> None:
         resp = await self.send_command(cmd.delete_address(user_id))

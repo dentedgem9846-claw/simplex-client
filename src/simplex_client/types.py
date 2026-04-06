@@ -242,15 +242,15 @@ class AddressSettings(_Base):
 
 
 class UserContactLink(_Base):
-    user_contact_link_id: int = Field(alias="userContactLinkId")
+    user_contact_link_id: int | None = Field(default=None, alias="userContactLinkId")
     conn_link_contact: CreatedConnLink = Field(alias="connLinkContact")
     short_link_data_set: bool = Field(default=False, alias="shortLinkDataSet")
     short_link_large_data_set: bool = Field(default=False, alias="shortLinkLargeDataSet")
-    address_settings: AddressSettings = Field(alias="addressSettings")
+    address_settings: AddressSettings | None = Field(default=None, alias="addressSettings")
 
     @property
     def contact_link(self) -> str:
-        return str(self.conn_link_contact)
+        return self.conn_link_contact.conn_full_link
 
 
 # ---------------------------------------------------------------------------

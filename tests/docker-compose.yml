@@ -1,27 +1,31 @@
 services:
   simplex-bot1:
     build: ./simplex
+    environment:
+      BOT_DISPLAY_NAME: TestBot1
     ports:
-      - "5225:5225"
+      - "5225"
     volumes:
       - bot1-data:/home/simplex/data
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "5225"]
       interval: 2s
       timeout: 5s
-      retries: 10
+      retries: 15
 
   simplex-bot2:
     build: ./simplex
+    environment:
+      BOT_DISPLAY_NAME: TestBot2
     ports:
-      - "5226:5225"
+      - "5225"
     volumes:
       - bot2-data:/home/simplex/data
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "5225"]
       interval: 2s
       timeout: 5s
-      retries: 10
+      retries: 15
 
 volumes:
   bot1-data:

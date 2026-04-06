@@ -68,7 +68,7 @@ class TestConnectionCommands:
         assert cmd.add_contact(1, incognito=True) == "/_connect 1 incognito=on"
 
     def test_connect(self):
-        assert cmd.connect(1, "https://link") == "/_connect 1 https://link"
+        assert cmd.connect(1, "https://link") == "/connect https://link"
 
     def test_connect_plan(self):
         assert cmd.connect_plan(1, "https://link") == "/_connect plan 1 https://link"
@@ -85,7 +85,7 @@ class TestContactCommands:
         assert cmd.list_contacts(1) == "/_contacts 1"
 
     def test_list_groups(self):
-        assert cmd.list_groups(1) == "/_groups 1"
+        assert cmd.list_groups(1) == "/groups"
 
     def test_list_groups_with_search(self):
         assert cmd.list_groups(1, search="test") == "/_groups 1 test"
