@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "simplex_client",
+  "project_id": "4e62e4b1-1a1b-46b7-9d81-116ae623fc41"
+}
