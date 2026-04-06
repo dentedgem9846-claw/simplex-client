@@ -14,6 +14,11 @@ For development:
 pip install -e ".[dev]"
 ```
 
+## Requirements
+
+- Python 3.10+
+- A running [SimpleX Chat CLI](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md) instance in WebSocket mode (`simplex-chat -p 5225`)
+
 ## Quick Start
 
 ```python
@@ -38,6 +43,8 @@ async def main():
 
 asyncio.run(main())
 ```
+
+See [`examples/echo_bot.py`](examples/echo_bot.py) for a complete working bot.
 
 ## Running Tests
 

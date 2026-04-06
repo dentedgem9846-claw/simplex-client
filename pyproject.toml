@@ -7,7 +7,7 @@ name = "simplex-client"
 version = "0.1.0"
 description = "Typed async Python client for the SimpleX Chat CLI WebSocket API"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "AGPL-3.0-or-later"
 authors = [{ name = "simplex-client contributors" }]
 dependencies = [
