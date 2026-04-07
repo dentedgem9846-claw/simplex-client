@@ -186,10 +186,15 @@ class SimplexClient:
         handlers = self._event_handlers.get(event_type, [])
         logger.debug("event.dispatching", event_type=event_type, handler_count=len(handlers))
         for handler in handlers:
-            try:
-                await handler(event)
-            except Exception:
-                logger.exception("event.handler_error", event_type=event_type)
+            asyncio.create_task(self._run_handler(handler, event, event_type))
+
+    async def _run_handler(
+        self, handler: EventCallback, event: Event, event_type: str
+    ) -> None:
+        try:
+            await handler(event)
+        except Exception:
+            logger.exception("event.handler_error", event_type=event_type)
 
     # -- Event registration --------------------------------------------------
 
