@@ -247,6 +247,12 @@ class SimplexClient:
             logger.warning("cmd.error", error_type=msg, resp_type=resp.get("type"))
             raise SimplexError(msg, resp)
 
+    async def _execute(self, command: str) -> dict[str, Any]:
+        """Send a command, check for errors, and return the response."""
+        resp = await self.send_command(command)
+        self._check_error(resp)
+        return resp
+
     # -----------------------------------------------------------------------
     # High-level API methods
     # -----------------------------------------------------------------------
@@ -272,46 +278,37 @@ class SimplexClient:
         """Create a new user profile and make it active."""
         logger.debug("user.create", display_name=display_name)
         profile = {"displayName": display_name, "fullName": full_name}
-        resp = await self.send_command(
+        resp = await self._execute(
             cmd.create_active_user({"profile": profile, "pastTimestamp": False})
         )
-        self._check_error(resp)
         return User.model_validate(resp.get("user", resp))
 
     async def list_users(self) -> list[UserInfo]:
-        resp = await self.send_command(cmd.list_users())
-        self._check_error(resp)
+        resp = await self._execute(cmd.list_users())
         return [UserInfo.model_validate(u) for u in resp.get("users", [])]
 
     async def set_active_user(self, user_id: int) -> User:
-        resp = await self.send_command(cmd.set_active_user(user_id))
-        self._check_error(resp)
+        resp = await self._execute(cmd.set_active_user(user_id))
         return User.model_validate(resp.get("user", resp))
 
     async def delete_user(self, user_id: int, del_smp: bool = True) -> None:
-        resp = await self.send_command(cmd.delete_user(user_id, del_smp))
-        self._check_error(resp)
+        await self._execute(cmd.delete_user(user_id, del_smp))
 
     async def update_profile(self, user_id: int, profile: dict[str, Any]) -> User:
-        resp = await self.send_command(cmd.update_profile(user_id, profile))
-        self._check_error(resp)
+        resp = await self._execute(cmd.update_profile(user_id, profile))
         return User.model_validate(resp.get("user", resp))
 
     # -- Address ------------------------------------------------------------
 
     async def create_address(self, user_id: int) -> UserContactLink:
         logger.debug("address.create")
-        resp = await self.send_command(cmd.create_address(user_id))
-        self._check_error(resp)
-        # Response type is "userContactLinkCreated" with connLinkContact at top level
+        resp = await self._execute(cmd.create_address(user_id))
         if "contactLink" in resp:
             return UserContactLink.model_validate(resp["contactLink"])
-        # Build a UserContactLink from the flat response fields
         return UserContactLink.model_validate(resp)
 
     async def delete_address(self, user_id: int) -> None:
-        resp = await self.send_command(cmd.delete_address(user_id))
-        self._check_error(resp)
+        await self._execute(cmd.delete_address(user_id))
 
     async def show_address(self, user_id: int) -> UserContactLink | None:
         resp = await self.send_command(cmd.show_address(user_id))
@@ -321,65 +318,51 @@ class SimplexClient:
         return None
 
     async def set_profile_address(self, user_id: int, on: bool = True) -> None:
-        resp = await self.send_command(cmd.set_profile_address(user_id, on))
-        self._check_error(resp)
+        await self._execute(cmd.set_profile_address(user_id, on))
 
     async def set_address_settings(
         self, user_id: int, settings: dict[str, Any]
     ) -> None:
-        resp = await self.send_command(cmd.set_address_settings(user_id, settings))
-        self._check_error(resp)
+        await self._execute(cmd.set_address_settings(user_id, settings))
 
     # -- Connection ---------------------------------------------------------
 
     async def add_contact(self, user_id: int, incognito: bool = False) -> dict[str, Any]:
-        resp = await self.send_command(cmd.add_contact(user_id, incognito))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.add_contact(user_id, incognito))
 
     async def connect_contact(self, user_id: int, link: str) -> dict[str, Any]:
-        resp = await self.send_command(cmd.connect(user_id, link))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.connect(user_id, link))
 
     async def connect_plan(self, user_id: int, link: str) -> ConnectionPlan:
-        resp = await self.send_command(cmd.connect_plan(user_id, link))
-        self._check_error(resp)
+        resp = await self._execute(cmd.connect_plan(user_id, link))
         return ConnectionPlan.model_validate(resp.get("connectionPlan", resp))
 
     async def accept_contact_request(self, contact_req_id: int) -> dict[str, Any]:
         logger.debug("contact.accept", contact_req_id=contact_req_id)
-        resp = await self.send_command(cmd.accept_contact(contact_req_id))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.accept_contact(contact_req_id))
 
     async def reject_contact_request(self, contact_req_id: int) -> None:
-        resp = await self.send_command(cmd.reject_contact(contact_req_id))
-        self._check_error(resp)
+        await self._execute(cmd.reject_contact(contact_req_id))
 
     # -- Contacts / chats ---------------------------------------------------
 
     async def list_contacts(self, user_id: int) -> list[Contact]:
-        resp = await self.send_command(cmd.list_contacts(user_id))
-        self._check_error(resp)
+        resp = await self._execute(cmd.list_contacts(user_id))
         return [Contact.model_validate(c) for c in resp.get("contacts", [])]
 
     async def list_groups(
         self, user_id: int, search: str | None = None
     ) -> list[dict[str, Any]]:
-        resp = await self.send_command(cmd.list_groups(user_id, search))
-        self._check_error(resp)
+        resp = await self._execute(cmd.list_groups(user_id, search))
         return resp.get("groups", [])
 
     async def delete_chat(self, chat_ref: str, mode: str = "full") -> None:
-        resp = await self.send_command(cmd.delete_chat(chat_ref, mode))
-        self._check_error(resp)
+        await self._execute(cmd.delete_chat(chat_ref, mode))
 
     async def set_contact_prefs(
         self, contact_id: int, prefs: dict[str, Any]
     ) -> None:
-        resp = await self.send_command(cmd.set_contact_prefs(contact_id, prefs))
-        self._check_error(resp)
+        await self._execute(cmd.set_contact_prefs(contact_id, prefs))
 
     # -- Messages -----------------------------------------------------------
 
@@ -392,10 +375,9 @@ class SimplexClient:
         ttl: int | None = None,
     ) -> list[AChatItem]:
         logger.debug("msg.send", chat_ref=chat_ref)
-        resp = await self.send_command(
+        resp = await self._execute(
             cmd.send_messages(chat_ref, composed_messages, live=live, ttl=ttl)
         )
-        self._check_error(resp)
         return [AChatItem.model_validate(i) for i in resp.get("chatItems", [])]
 
     async def update_chat_item(
@@ -406,11 +388,9 @@ class SimplexClient:
         *,
         live: bool = False,
     ) -> dict[str, Any]:
-        resp = await self.send_command(
+        return await self._execute(
             cmd.update_chat_item(chat_ref, chat_item_id, updated_message, live=live)
         )
-        self._check_error(resp)
-        return resp
 
     async def delete_chat_items(
         self,
@@ -418,16 +398,12 @@ class SimplexClient:
         item_ids: list[int],
         mode: str = "broadcast",
     ) -> dict[str, Any]:
-        resp = await self.send_command(cmd.delete_chat_item(chat_ref, item_ids, mode))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.delete_chat_item(chat_ref, item_ids, mode))
 
     async def delete_member_chat_items(
         self, group_id: int, item_ids: list[int]
     ) -> dict[str, Any]:
-        resp = await self.send_command(cmd.delete_member_chat_item(group_id, item_ids))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.delete_member_chat_item(group_id, item_ids))
 
     async def react_to_chat_item(
         self,
@@ -436,84 +412,61 @@ class SimplexClient:
         add: bool,
         reaction: dict[str, Any],
     ) -> dict[str, Any]:
-        resp = await self.send_command(
+        return await self._execute(
             cmd.chat_item_reaction(chat_ref, chat_item_id, add, reaction)
         )
-        self._check_error(resp)
-        return resp
 
     # -- Groups -------------------------------------------------------------
 
     async def create_group(
         self, user_id: int, group_profile: dict[str, Any], incognito: bool = False
     ) -> GroupInfo:
-        resp = await self.send_command(
-            cmd.new_group(user_id, group_profile, incognito)
-        )
-        self._check_error(resp)
+        resp = await self._execute(cmd.new_group(user_id, group_profile, incognito))
         return GroupInfo.model_validate(resp.get("groupInfo", resp))
 
     async def update_group_profile(
         self, group_id: int, group_profile: dict[str, Any]
     ) -> GroupInfo:
-        resp = await self.send_command(
-            cmd.update_group_profile(group_id, group_profile)
-        )
-        self._check_error(resp)
+        resp = await self._execute(cmd.update_group_profile(group_id, group_profile))
         return GroupInfo.model_validate(resp.get("toGroup", resp))
 
     async def add_member(
         self, group_id: int, contact_id: int, role: str = "member"
     ) -> dict[str, Any]:
-        resp = await self.send_command(cmd.add_member(group_id, contact_id, role))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.add_member(group_id, contact_id, role))
 
     async def join_group(self, group_id: int) -> dict[str, Any]:
-        resp = await self.send_command(cmd.join_group(group_id))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.join_group(group_id))
 
     async def accept_member(
         self, group_id: int, member_id: int, role: str = "member"
     ) -> dict[str, Any]:
-        resp = await self.send_command(cmd.accept_member(group_id, member_id, role))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.accept_member(group_id, member_id, role))
 
     async def set_members_role(
         self, group_id: int, member_ids: list[int], role: str
     ) -> dict[str, Any]:
-        resp = await self.send_command(cmd.members_role(group_id, member_ids, role))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.members_role(group_id, member_ids, role))
 
     async def block_members_for_all(
         self, group_id: int, member_ids: list[int], blocked: bool = True
     ) -> dict[str, Any]:
-        resp = await self.send_command(
+        return await self._execute(
             cmd.block_members_for_all(group_id, member_ids, blocked)
         )
-        self._check_error(resp)
-        return resp
 
     async def remove_members(
         self, group_id: int, member_ids: list[int], with_messages: bool = False
     ) -> dict[str, Any]:
-        resp = await self.send_command(
+        return await self._execute(
             cmd.remove_members(group_id, member_ids, with_messages)
         )
-        self._check_error(resp)
-        return resp
 
     async def leave_group(self, group_id: int) -> dict[str, Any]:
-        resp = await self.send_command(cmd.leave_group(group_id))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.leave_group(group_id))
 
     async def list_members(self, group_id: int) -> list[GroupMember]:
-        resp = await self.send_command(cmd.list_members(group_id))
-        self._check_error(resp)
+        resp = await self._execute(cmd.list_members(group_id))
         return [GroupMember.model_validate(m) for m in resp.get("group", {}).get("members", [])]
 
     # -- Group links --------------------------------------------------------
@@ -521,23 +474,19 @@ class SimplexClient:
     async def create_group_link(
         self, group_id: int, role: str = "member"
     ) -> GroupLink:
-        resp = await self.send_command(cmd.create_group_link(group_id, role))
-        self._check_error(resp)
+        resp = await self._execute(cmd.create_group_link(group_id, role))
         return GroupLink.model_validate(resp.get("groupLink", resp))
 
     async def get_group_link(self, group_id: int) -> GroupLink:
-        resp = await self.send_command(cmd.get_group_link(group_id))
-        self._check_error(resp)
+        resp = await self._execute(cmd.get_group_link(group_id))
         return GroupLink.model_validate(resp.get("groupLink", resp))
 
     async def set_group_link_role(self, group_id: int, role: str) -> GroupLink:
-        resp = await self.send_command(cmd.group_link_member_role(group_id, role))
-        self._check_error(resp)
+        resp = await self._execute(cmd.group_link_member_role(group_id, role))
         return GroupLink.model_validate(resp.get("groupLink", resp))
 
     async def delete_group_link(self, group_id: int) -> None:
-        resp = await self.send_command(cmd.delete_group_link(group_id))
-        self._check_error(resp)
+        await self._execute(cmd.delete_group_link(group_id))
 
     # -- Files --------------------------------------------------------------
 
@@ -549,13 +498,9 @@ class SimplexClient:
         encrypt: bool | None = None,
         inline: bool | None = None,
     ) -> dict[str, Any]:
-        resp = await self.send_command(
+        return await self._execute(
             cmd.receive_file(file_id, file_path=file_path, encrypt=encrypt, inline=inline)
         )
-        self._check_error(resp)
-        return resp
 
     async def cancel_file(self, file_id: int) -> dict[str, Any]:
-        resp = await self.send_command(cmd.cancel_file(file_id))
-        self._check_error(resp)
-        return resp
+        return await self._execute(cmd.cancel_file(file_id))
