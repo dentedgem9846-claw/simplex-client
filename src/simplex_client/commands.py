@@ -100,9 +100,6 @@ def connect_via_link(user_id: int, link: str) -> str:
     return f"/connect {link}"
 
 
-# Keep old name as alias for backward compatibility
-connect = connect_via_link
-
 
 def connect_plan(user_id: int, link: str) -> str:
     _validate_str(link, "link")
@@ -189,17 +186,9 @@ def delete_chat_items(
     return f"/_delete item {chat_ref} {ids_str} {mode}"
 
 
-# Keep old name as alias for backward compatibility
-delete_chat_item = delete_chat_items
-
-
 def delete_member_chat_items(group_id: int, item_ids: list[int]) -> str:
     ids_str = ",".join(str(i) for i in item_ids)
     return f"/_delete member item #{group_id} {ids_str}"
-
-
-# Keep old name as alias for backward compatibility
-delete_member_chat_item = delete_member_chat_items
 
 
 def chat_item_reaction(
@@ -225,9 +214,6 @@ def create_group(
     inc = " incognito=on" if incognito else ""
     return f"/_group {user_id}{inc} {json.dumps(group_profile)}"
 
-
-# Keep old name as alias for backward compatibility
-new_group = create_group
 
 
 def update_group_profile(group_id: int, group_profile: dict[str, Any]) -> str:

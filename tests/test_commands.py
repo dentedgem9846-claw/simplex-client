@@ -68,7 +68,7 @@ class TestConnectionCommands:
         assert cmd.add_contact(1, incognito=True) == "/_connect 1 incognito=on"
 
     def test_connect(self):
-        assert cmd.connect(1, "https://link") == "/connect https://link"
+        assert cmd.connect_via_link(1, "https://link") == "/connect https://link"
 
     def test_connect_plan(self):
         assert cmd.connect_plan(1, "https://link") == "/_connect plan 1 https://link"
@@ -113,11 +113,11 @@ class TestMessageCommands:
         assert result.startswith("/_update item @5 100")
 
     def test_delete_chat_item(self):
-        result = cmd.delete_chat_item("@5", [100, 101], "broadcast")
+        result = cmd.delete_chat_items("@5", [100, 101], "broadcast")
         assert result == "/_delete item @5 100,101 broadcast"
 
     def test_delete_member_chat_item(self):
-        result = cmd.delete_member_chat_item(10, [200])
+        result = cmd.delete_member_chat_items(10, [200])
         assert result == "/_delete member item #10 200"
 
     def test_chat_item_reaction(self):
@@ -127,11 +127,11 @@ class TestMessageCommands:
 
 class TestGroupCommands:
     def test_new_group(self):
-        result = cmd.new_group(1, {"displayName": "Test", "fullName": ""})
+        result = cmd.create_group(1, {"displayName": "Test", "fullName": ""})
         assert result.startswith("/_group 1 ")
 
-    def test_new_group_incognito(self):
-        result = cmd.new_group(1, {"displayName": "Test"}, incognito=True)
+    def test_create_group_incognito(self):
+        result = cmd.create_group(1, {"displayName": "Test"}, incognito=True)
         assert " incognito=on" in result
 
     def test_update_group_profile(self):

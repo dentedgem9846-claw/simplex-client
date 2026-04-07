@@ -331,7 +331,7 @@ class SimplexClient:
         return await self._execute(cmd.add_contact(user_id, incognito))
 
     async def connect_contact(self, user_id: int, link: str) -> dict[str, Any]:
-        return await self._execute(cmd.connect(user_id, link))
+        return await self._execute(cmd.connect_via_link(user_id, link))
 
     async def connect_plan(self, user_id: int, link: str) -> ConnectionPlan:
         resp = await self._execute(cmd.connect_plan(user_id, link))
@@ -398,12 +398,12 @@ class SimplexClient:
         item_ids: list[int],
         mode: str = "broadcast",
     ) -> dict[str, Any]:
-        return await self._execute(cmd.delete_chat_item(chat_ref, item_ids, mode))
+        return await self._execute(cmd.delete_chat_items(chat_ref, item_ids, mode))
 
     async def delete_member_chat_items(
         self, group_id: int, item_ids: list[int]
     ) -> dict[str, Any]:
-        return await self._execute(cmd.delete_member_chat_item(group_id, item_ids))
+        return await self._execute(cmd.delete_member_chat_items(group_id, item_ids))
 
     async def react_to_chat_item(
         self,
@@ -421,7 +421,7 @@ class SimplexClient:
     async def create_group(
         self, user_id: int, group_profile: dict[str, Any], incognito: bool = False
     ) -> GroupInfo:
-        resp = await self._execute(cmd.new_group(user_id, group_profile, incognito))
+        resp = await self._execute(cmd.create_group(user_id, group_profile, incognito))
         return GroupInfo.model_validate(resp.get("groupInfo", resp))
 
     async def update_group_profile(
