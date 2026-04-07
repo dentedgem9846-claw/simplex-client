@@ -6,7 +6,30 @@ Each function returns the command string to send via ``send_command``.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
+
+
+def _validate_str(value: str, name: str) -> str:
+    """Reject strings containing newlines or control characters that could
+    break the SimpleX CLI command parser."""
+    if re.search(r"[\x00-\x1f]", value):
+        raise ValueError(f"{name} contains invalid control characters")
+    return value
+
+
+def _validate_role(role: str) -> str:
+    _VALID_ROLES = {"observer", "author", "member", "moderator", "admin", "owner"}
+    if role not in _VALID_ROLES:
+        raise ValueError(f"invalid role: {role!r}")
+    return role
+
+
+def _validate_delete_mode(mode: str) -> str:
+    _VALID_MODES = {"broadcast", "internal", "internalMark", "full", "entity", "messages"}
+    if mode not in _VALID_MODES:
+        raise ValueError(f"invalid delete mode: {mode!r}")
+    return mode
 
 
 # ---------------------------------------------------------------------------
@@ -73,10 +96,12 @@ def add_contact(user_id: int, incognito: bool = False) -> str:
 
 
 def connect(user_id: int, link: str) -> str:
+    _validate_str(link, "link")
     return f"/connect {link}"
 
 
 def connect_plan(user_id: int, link: str) -> str:
+    _validate_str(link, "link")
     return f"/_connect plan {user_id} {link}"
 
 
@@ -98,11 +123,14 @@ def list_contacts(user_id: int) -> str:
 
 def list_groups(user_id: int, search: str | None = None) -> str:
     if search:
+        _validate_str(search, "search")
         return f"/_groups {user_id} {search}"
     return "/groups"
 
 
 def delete_chat(chat_ref: str, mode: str = "full") -> str:
+    _validate_str(chat_ref, "chat_ref")
+    _validate_delete_mode(mode)
     return f"/_delete {chat_ref} {mode}"
 
 
@@ -121,6 +149,7 @@ def send_messages(
     live: bool = False,
     ttl: int | None = None,
 ) -> str:
+    _validate_str(chat_ref, "chat_ref")
     cmd = f"/_send {chat_ref}"
     if live:
         cmd += " live=on"
@@ -137,6 +166,7 @@ def update_chat_item(
     *,
     live: bool = False,
 ) -> str:
+    _validate_str(chat_ref, "chat_ref")
     cmd = f"/_update item {chat_ref} {chat_item_id}"
     if live:
         cmd += " live=on"
@@ -149,6 +179,8 @@ def delete_chat_item(
     item_ids: list[int],
     mode: str = "broadcast",
 ) -> str:
+    _validate_str(chat_ref, "chat_ref")
+    _validate_delete_mode(mode)
     ids_str = ",".join(str(i) for i in item_ids)
     return f"/_delete item {chat_ref} {ids_str} {mode}"
 
@@ -164,6 +196,7 @@ def chat_item_reaction(
     add: bool,
     reaction: dict[str, Any],
 ) -> str:
+    _validate_str(chat_ref, "chat_ref")
     flag = "on" if add else "off"
     return f"/_reaction {chat_ref} {chat_item_id} {flag} {json.dumps(reaction)}"
 
@@ -186,6 +219,7 @@ def update_group_profile(group_id: int, group_profile: dict[str, Any]) -> str:
 
 
 def add_member(group_id: int, contact_id: int, role: str = "member") -> str:
+    _validate_role(role)
     return f"/_add #{group_id} {contact_id} {role}"
 
 
@@ -194,10 +228,12 @@ def join_group(group_id: int) -> str:
 
 
 def accept_member(group_id: int, member_id: int, role: str = "member") -> str:
+    _validate_role(role)
     return f"/_accept member #{group_id} {member_id} {role}"
 
 
 def members_role(group_id: int, member_ids: list[int], role: str) -> str:
+    _validate_role(role)
     ids_str = ",".join(str(i) for i in member_ids)
     return f"/_member role #{group_id} {ids_str} {role}"
 
@@ -237,10 +273,12 @@ def list_members(group_id: int) -> str:
 # ---------------------------------------------------------------------------
 
 def create_group_link(group_id: int, role: str = "member") -> str:
+    _validate_role(role)
     return f"/_create link #{group_id} {role}"
 
 
 def group_link_member_role(group_id: int, role: str) -> str:
+    _validate_role(role)
     return f"/_set link role #{group_id} {role}"
 
 
@@ -269,6 +307,7 @@ def receive_file(
     if inline is not None:
         cmd += f" inline={'on' if inline else 'off'}"
     if file_path is not None:
+        _validate_str(file_path, "file_path")
         cmd += f" {file_path}"
     return cmd
 
