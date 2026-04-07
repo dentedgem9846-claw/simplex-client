@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import structlog
+
 from pydantic import ConfigDict, Field
 
 from .types import (
@@ -340,6 +342,9 @@ EVENT_TYPES: dict[str, type[Event]] = {
 }
 
 
+logger = structlog.get_logger(__name__)
+
+
 def parse_event(data: dict[str, Any]) -> Event:
     """Parse a raw event dict into a typed Event instance.
 
@@ -347,4 +352,5 @@ def parse_event(data: dict[str, Any]) -> Event:
     """
     event_type = data.get("type", "")
     cls = EVENT_TYPES.get(event_type, Event)
+    logger.debug("event.parse", event_type=event_type, known=event_type in EVENT_TYPES)
     return cls.model_validate(data)

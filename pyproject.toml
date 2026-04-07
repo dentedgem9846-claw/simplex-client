@@ -13,6 +13,7 @@ authors = [{ name = "simplex-client contributors" }]
 dependencies = [
     "websockets>=12.0",
     "pydantic>=2.0",
+    "structlog>=24.0",
 ]
 
 [project.optional-dependencies]

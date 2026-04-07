@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import random
 from collections.abc import Callable, Coroutine
 from typing import Any
 
+import structlog
 import websockets
 import websockets.asyncio.client
 
@@ -28,7 +28,7 @@ from .types import (
     UserInfo,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 EventCallback = Callable[[Event], Coroutine[Any, Any, None]]
 
@@ -73,11 +73,14 @@ class SimplexClient:
             self.port = port
         self.uri = f"ws://{self.host}:{self.port}"
         self._closed = False
+        logger.info("ws.connecting", host=self.host, port=self.port, uri=self.uri)
         self._ws = await websockets.asyncio.client.connect(self.uri)
         self._listener_task = asyncio.create_task(self._listen())
+        logger.info("ws.connected", uri=self.uri)
 
     async def close(self) -> None:
         """Close the WebSocket connection and cancel the listener."""
+        logger.info("ws.closing")
         self._closed = True
         if self._listener_task and not self._listener_task.done():
             self._listener_task.cancel()
@@ -93,6 +96,7 @@ class SimplexClient:
             if not fut.done():
                 fut.set_exception(SimplexConnectionError("connection closed"))
         self._pending.clear()
+        logger.info("ws.closed")
 
     # -- Reconnection --------------------------------------------------------
 
@@ -104,14 +108,14 @@ class SimplexClient:
                 await self.connect()
                 await self._listener_task  # type: ignore[arg-type]
             except (websockets.ConnectionClosed, OSError) as exc:
-                logger.warning("Connection lost: %s — reconnecting…", exc)
+                logger.warning("ws.connection_lost", error=str(exc))
             except asyncio.CancelledError:
                 return
             if self._closed:
                 return
             jitter = random.uniform(0, delay * 0.5)
             wait = min(delay + jitter, 30.0)
-            logger.info("Reconnecting in %.1fs…", wait)
+            logger.info("ws.reconnecting", delay=wait)
             await asyncio.sleep(wait)
             delay = min(delay * 2, 30.0)
 
@@ -123,6 +127,7 @@ class SimplexClient:
             raise SimplexConnectionError("not connected")
         self._corr_id += 1
         corr_id = str(self._corr_id)
+        logger.debug("cmd.send", corr_id=corr_id, command=command[:100])
         loop = asyncio.get_running_loop()
         fut: asyncio.Future[dict[str, Any]] = loop.create_future()
         self._pending[corr_id] = fut
@@ -144,7 +149,7 @@ class SimplexClient:
                 try:
                     data = json.loads(raw)
                 except json.JSONDecodeError:
-                    logger.warning("Invalid JSON from server: %s", raw[:200])
+                    logger.warning("ws.invalid_json", preview=raw[:200])
                     continue
 
                 corr_id = data.get("corrId")
@@ -156,8 +161,10 @@ class SimplexClient:
                     fut = self._pending.pop(corr_id)
                     if not fut.done():
                         fut.set_result(resp)
+                    logger.debug("cmd.response", corr_id=corr_id, type=resp.get("type", "unknown"))
                 else:
                     # Unsolicited event
+                    logger.debug("event.received", type=resp.get("type", "unknown"))
                     await self._dispatch_event(resp)
         except websockets.ConnectionClosed:
             if not self._closed:
@@ -177,11 +184,12 @@ class SimplexClient:
         event_type = data.get("type", "")
         event = parse_event(data)
         handlers = self._event_handlers.get(event_type, [])
+        logger.debug("event.dispatching", event_type=event_type, handler_count=len(handlers))
         for handler in handlers:
             try:
                 await handler(event)
             except Exception:
-                logger.exception("Error in event handler for %s", event_type)
+                logger.exception("event.handler_error", event_type=event_type)
 
     # -- Event registration --------------------------------------------------
 
@@ -221,6 +229,7 @@ class SimplexClient:
             chat_error = resp.get("chatError", {})
             error_type = chat_error.get("errorType", {}) if isinstance(chat_error, dict) else {}
             msg = error_type.get("type", "unknown error") if isinstance(error_type, dict) else str(chat_error)
+            logger.warning("cmd.error", error_type=msg, resp_type=resp.get("type"))
             raise SimplexError(msg, resp)
 
     # -----------------------------------------------------------------------
@@ -231,6 +240,7 @@ class SimplexClient:
 
     async def get_user(self) -> User | None:
         """Get the active user profile, or ``None`` if none exists."""
+        logger.debug("user.get")
         resp = await self.send_command(cmd.show_active_user())
         if resp.get("type") == "activeUser":
             return User.model_validate(resp.get("user", resp))
@@ -245,6 +255,7 @@ class SimplexClient:
 
     async def create_user(self, display_name: str, full_name: str = "") -> User:
         """Create a new user profile and make it active."""
+        logger.debug("user.create", display_name=display_name)
         profile = {"displayName": display_name, "fullName": full_name}
         resp = await self.send_command(
             cmd.create_active_user({"profile": profile, "pastTimestamp": False})
@@ -274,6 +285,7 @@ class SimplexClient:
     # -- Address ------------------------------------------------------------
 
     async def create_address(self, user_id: int) -> UserContactLink:
+        logger.debug("address.create")
         resp = await self.send_command(cmd.create_address(user_id))
         self._check_error(resp)
         # Response type is "userContactLinkCreated" with connLinkContact at top level
@@ -321,6 +333,7 @@ class SimplexClient:
         return ConnectionPlan.model_validate(resp.get("connectionPlan", resp))
 
     async def accept_contact_request(self, contact_req_id: int) -> dict[str, Any]:
+        logger.debug("contact.accept", contact_req_id=contact_req_id)
         resp = await self.send_command(cmd.accept_contact(contact_req_id))
         self._check_error(resp)
         return resp
@@ -363,6 +376,7 @@ class SimplexClient:
         live: bool = False,
         ttl: int | None = None,
     ) -> list[AChatItem]:
+        logger.debug("msg.send", chat_ref=chat_ref)
         resp = await self.send_command(
             cmd.send_messages(chat_ref, composed_messages, live=live, ttl=ttl)
         )
