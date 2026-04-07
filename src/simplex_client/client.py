@@ -13,7 +13,7 @@ import websockets
 import websockets.asyncio.client
 
 from . import commands as cmd
-from .events import EVENT_TYPES, Event, parse_event
+from .events import Event, parse_event
 from .exceptions import SimplexConnectionError, SimplexError
 from .types import (
     AChatItem,
@@ -22,7 +22,6 @@ from .types import (
     GroupInfo,
     GroupLink,
     GroupMember,
-    GroupProfile,
     User,
     UserContactLink,
     UserInfo,
