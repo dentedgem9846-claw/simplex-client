@@ -9,7 +9,6 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-
 from pydantic import ConfigDict, Field
 
 from .types import (
@@ -17,21 +16,21 @@ from .types import (
     ChatError,
     ChatItemDeletion,
     Contact,
+    FileTransferMeta,
     GroupInfo,
     GroupMember,
     MsgReaction,
     RcvFileDescr,
     RcvFileTransfer,
-    FileTransferMeta,
     User,
     UserContactRequest,
     _Base,
 )
 
-
 # ---------------------------------------------------------------------------
 # Base event
 # ---------------------------------------------------------------------------
+
 
 class Event(_Base):
     """Base for all events. Unknown fields are silently ignored."""
@@ -43,6 +42,7 @@ class Event(_Base):
 # ---------------------------------------------------------------------------
 # Contact / connection events
 # ---------------------------------------------------------------------------
+
 
 class ContactConnectedEvent(Event):
     type: str = "contactConnected"
@@ -91,6 +91,7 @@ class ContactConnectingEvent(Event):
 # Message events
 # ---------------------------------------------------------------------------
 
+
 class NewChatItemsEvent(Event):
     type: str = "newChatItems"
     user: User
@@ -127,6 +128,7 @@ class ChatItemsStatusesUpdatedEvent(Event):
 # ---------------------------------------------------------------------------
 # Group events
 # ---------------------------------------------------------------------------
+
 
 class ReceivedGroupInvitationEvent(Event):
     type: str = "receivedGroupInvitation"
@@ -224,6 +226,7 @@ class GroupMemberUpdatedEvent(Event):
 # File events
 # ---------------------------------------------------------------------------
 
+
 class RcvFileDescrReadyEvent(Event):
     type: str = "rcvFileDescrReady"
     user: User
@@ -281,6 +284,7 @@ class SndFileErrorEvent(Event):
 # ---------------------------------------------------------------------------
 # Error / system events
 # ---------------------------------------------------------------------------
+
 
 class MessageErrorEvent(Event):
     type: str = "messageError"

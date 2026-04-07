@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import random
 from collections.abc import Callable, Coroutine
@@ -17,8 +18,8 @@ from .events import Event, parse_event
 from .exceptions import SimplexConnectionError, SimplexError
 from .types import (
     AChatItem,
-    Contact,
     ConnectionPlan,
+    Contact,
     GroupInfo,
     GroupLink,
     GroupMember,
@@ -43,7 +44,11 @@ class SimplexClient:
     """
 
     def __init__(
-        self, host: str = "localhost", port: int = 5225, *, command_timeout: float = 30.0
+        self,
+        host: str = "localhost",
+        port: int = 5225,
+        *,
+        command_timeout: float = 30.0,
     ) -> None:
         self.host = host
         self.port = port
@@ -86,10 +91,8 @@ class SimplexClient:
         self._closed = True
         if self._listener_task and not self._listener_task.done():
             self._listener_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._listener_task
-            except asyncio.CancelledError:
-                pass
         if self._ws:
             await self._ws.close()
             self._ws = None
@@ -144,7 +147,8 @@ class SimplexClient:
             return await asyncio.wait_for(fut, timeout=self.command_timeout)
         except asyncio.TimeoutError:
             self._pending.pop(corr_id, None)
-            raise SimplexError(f"command timed out after {self.command_timeout}s")
+            msg = f"command timed out after {self.command_timeout}s"
+            raise SimplexError(msg) from None
 
     async def _listen(self) -> None:
         """Background loop: dispatch responses and events."""
@@ -168,14 +172,20 @@ class SimplexClient:
                     fut = self._pending.pop(corr_id)
                     if not fut.done():
                         fut.set_result(resp)
-                    logger.debug("cmd.response", corr_id=corr_id, type=resp.get("type", "unknown"))
+                    logger.debug(
+                        "cmd.response",
+                        corr_id=corr_id,
+                        type=resp.get("type", "unknown"),
+                    )
                 else:
                     # Unsolicited event
                     logger.debug("event.received", type=resp.get("type", "unknown"))
                     try:
                         await self._dispatch_event(resp)
                     except Exception:
-                        logger.exception("event.dispatch_error", type=resp.get("type", "unknown"))
+                        logger.exception(
+                            "event.dispatch_error", type=resp.get("type", "unknown")
+                        )
         except websockets.ConnectionClosed:
             if not self._closed:
                 raise
@@ -194,7 +204,9 @@ class SimplexClient:
         event_type = data.get("type", "")
         event = parse_event(data)
         handlers = self._event_handlers.get(event_type, [])
-        logger.debug("event.dispatching", event_type=event_type, handler_count=len(handlers))
+        logger.debug(
+            "event.dispatching", event_type=event_type, handler_count=len(handlers)
+        )
         for handler in handlers:
             asyncio.create_task(self._run_handler(handler, event, event_type))
 
@@ -242,8 +254,14 @@ class SimplexClient:
     def _check_error(self, resp: dict[str, Any]) -> None:
         if resp.get("type") == "chatCmdError":
             chat_error = resp.get("chatError", {})
-            error_type = chat_error.get("errorType", {}) if isinstance(chat_error, dict) else {}
-            msg = error_type.get("type", "unknown error") if isinstance(error_type, dict) else str(chat_error)
+            error_type = (
+                chat_error.get("errorType", {}) if isinstance(chat_error, dict) else {}
+            )
+            msg = (
+                error_type.get("type", "unknown error")
+                if isinstance(error_type, dict)
+                else str(chat_error)
+            )
             logger.warning("cmd.error", error_type=msg, resp_type=resp.get("type"))
             raise SimplexError(msg, resp)
 
@@ -327,7 +345,9 @@ class SimplexClient:
 
     # -- Connection ---------------------------------------------------------
 
-    async def add_contact(self, user_id: int, incognito: bool = False) -> dict[str, Any]:
+    async def add_contact(
+        self, user_id: int, incognito: bool = False
+    ) -> dict[str, Any]:
         return await self._execute(cmd.add_contact(user_id, incognito))
 
     async def connect_contact(self, user_id: int, link: str) -> dict[str, Any]:
@@ -359,9 +379,7 @@ class SimplexClient:
     async def delete_chat(self, chat_ref: str, mode: str = "full") -> None:
         await self._execute(cmd.delete_chat(chat_ref, mode))
 
-    async def set_contact_prefs(
-        self, contact_id: int, prefs: dict[str, Any]
-    ) -> None:
+    async def set_contact_prefs(self, contact_id: int, prefs: dict[str, Any]) -> None:
         await self._execute(cmd.set_contact_prefs(contact_id, prefs))
 
     # -- Messages -----------------------------------------------------------
@@ -467,13 +485,14 @@ class SimplexClient:
 
     async def list_members(self, group_id: int) -> list[GroupMember]:
         resp = await self._execute(cmd.list_members(group_id))
-        return [GroupMember.model_validate(m) for m in resp.get("group", {}).get("members", [])]
+        return [
+            GroupMember.model_validate(m)
+            for m in resp.get("group", {}).get("members", [])
+        ]
 
     # -- Group links --------------------------------------------------------
 
-    async def create_group_link(
-        self, group_id: int, role: str = "member"
-    ) -> GroupLink:
+    async def create_group_link(self, group_id: int, role: str = "member") -> GroupLink:
         resp = await self._execute(cmd.create_group_link(group_id, role))
         return GroupLink.model_validate(resp.get("groupLink", resp))
 
@@ -499,7 +518,9 @@ class SimplexClient:
         inline: bool | None = None,
     ) -> dict[str, Any]:
         return await self._execute(
-            cmd.receive_file(file_id, file_path=file_path, encrypt=encrypt, inline=inline)
+            cmd.receive_file(
+                file_id, file_path=file_path, encrypt=encrypt, inline=inline
+            )
         )
 
     async def cancel_file(self, file_id: int) -> dict[str, Any]:

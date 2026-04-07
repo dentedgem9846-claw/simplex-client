@@ -26,7 +26,14 @@ def _validate_role(role: str) -> str:
 
 
 def _validate_delete_mode(mode: str) -> str:
-    _VALID_MODES = {"broadcast", "internal", "internalMark", "full", "entity", "messages"}
+    _VALID_MODES = {
+        "broadcast",
+        "internal",
+        "internalMark",
+        "full",
+        "entity",
+        "messages",
+    }
     if mode not in _VALID_MODES:
         raise ValueError(f"invalid delete mode: {mode!r}")
     return mode
@@ -35,6 +42,7 @@ def _validate_delete_mode(mode: str) -> str:
 # ---------------------------------------------------------------------------
 # User / Profile commands
 # ---------------------------------------------------------------------------
+
 
 def show_active_user() -> str:
     return "/user"
@@ -65,6 +73,7 @@ def update_profile(user_id: int, profile: dict[str, Any]) -> str:
 # Address commands
 # ---------------------------------------------------------------------------
 
+
 def create_address(user_id: int) -> str:
     return f"/_address {user_id}"
 
@@ -90,6 +99,7 @@ def set_address_settings(user_id: int, settings: dict[str, Any]) -> str:
 # Connection commands
 # ---------------------------------------------------------------------------
 
+
 def add_contact(user_id: int, incognito: bool = False) -> str:
     inc = " incognito=on" if incognito else ""
     return f"/_connect {user_id}{inc}"
@@ -98,7 +108,6 @@ def add_contact(user_id: int, incognito: bool = False) -> str:
 def connect_via_link(user_id: int, link: str) -> str:
     _validate_str(link, "link")
     return f"/connect {link}"
-
 
 
 def connect_plan(user_id: int, link: str) -> str:
@@ -117,6 +126,7 @@ def reject_contact(contact_req_id: int) -> str:
 # ---------------------------------------------------------------------------
 # Contact / chat commands
 # ---------------------------------------------------------------------------
+
 
 def list_contacts(user_id: int) -> str:
     return f"/_contacts {user_id}"
@@ -142,6 +152,7 @@ def set_contact_prefs(contact_id: int, prefs: dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 # Message commands
 # ---------------------------------------------------------------------------
+
 
 def send_messages(
     chat_ref: str,
@@ -206,6 +217,7 @@ def chat_item_reaction(
 # Group commands
 # ---------------------------------------------------------------------------
 
+
 def create_group(
     user_id: int,
     group_profile: dict[str, Any],
@@ -213,7 +225,6 @@ def create_group(
 ) -> str:
     inc = " incognito=on" if incognito else ""
     return f"/_group {user_id}{inc} {json.dumps(group_profile)}"
-
 
 
 def update_group_profile(group_id: int, group_profile: dict[str, Any]) -> str:
@@ -274,6 +285,7 @@ def list_members(group_id: int) -> str:
 # Group link commands
 # ---------------------------------------------------------------------------
 
+
 def create_group_link(group_id: int, role: str = "member") -> str:
     _validate_role(role)
     return f"/_create link #{group_id} {role}"
@@ -295,6 +307,7 @@ def get_group_link(group_id: int) -> str:
 # ---------------------------------------------------------------------------
 # File commands
 # ---------------------------------------------------------------------------
+
 
 def receive_file(
     file_id: int,

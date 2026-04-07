@@ -7,10 +7,10 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag
 
-
 # ---------------------------------------------------------------------------
 # Config shared by all models
 # ---------------------------------------------------------------------------
+
 
 class _Base(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
@@ -19,6 +19,7 @@ class _Base(BaseModel):
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
+
 
 class ChatType(str, Enum):
     direct = "direct"
@@ -114,6 +115,7 @@ class ReportReason(str, Enum):
 # Shared / small types
 # ---------------------------------------------------------------------------
 
+
 class CreatedConnLink(_Base):
     conn_full_link: str = Field(alias="connFullLink")
     conn_short_link: str | None = Field(default=None, alias="connShortLink")
@@ -140,6 +142,7 @@ class VersionRange(_Base):
 # ---------------------------------------------------------------------------
 # Profile / User types
 # ---------------------------------------------------------------------------
+
 
 class Profile(_Base):
     display_name: str = Field(alias="displayName")
@@ -183,6 +186,7 @@ class NewUser(_Base):
 # Connection
 # ---------------------------------------------------------------------------
 
+
 class Connection(_Base):
     conn_id: int = Field(alias="connId")
     agent_conn_id: str = Field(alias="agentConnId")
@@ -197,6 +201,7 @@ class Connection(_Base):
 # Contact
 # ---------------------------------------------------------------------------
 
+
 class ChatSettings(_Base):
     enable_ntfs: str | None = Field(default=None, alias="enableNtfs")
     send_rcpts: bool | None = Field(default=None, alias="sendRcpts")
@@ -210,7 +215,9 @@ class Contact(_Base):
     active_conn: Connection | None = Field(default=None, alias="activeConn")
     via_group: int | None = Field(default=None, alias="viaGroup")
     contact_used: bool = Field(default=False, alias="contactUsed")
-    contact_status: ContactStatus = Field(default=ContactStatus.active, alias="contactStatus")
+    contact_status: ContactStatus = Field(
+        default=ContactStatus.active, alias="contactStatus"
+    )
     chat_settings: ChatSettings = Field(alias="chatSettings")
     contact_grp_inv_sent: bool = Field(default=False, alias="contactGrpInvSent")
     chat_deleted: bool = Field(default=False, alias="chatDeleted")
@@ -231,6 +238,7 @@ class UserContactRequest(_Base):
 # Address
 # ---------------------------------------------------------------------------
 
+
 class AutoAccept(_Base):
     accept_incognito: bool = Field(default=False, alias="acceptIncognito")
 
@@ -245,8 +253,12 @@ class UserContactLink(_Base):
     user_contact_link_id: int | None = Field(default=None, alias="userContactLinkId")
     conn_link_contact: CreatedConnLink = Field(alias="connLinkContact")
     short_link_data_set: bool = Field(default=False, alias="shortLinkDataSet")
-    short_link_large_data_set: bool = Field(default=False, alias="shortLinkLargeDataSet")
-    address_settings: AddressSettings | None = Field(default=None, alias="addressSettings")
+    short_link_large_data_set: bool = Field(
+        default=False, alias="shortLinkLargeDataSet"
+    )
+    address_settings: AddressSettings | None = Field(
+        default=None, alias="addressSettings"
+    )
 
     @property
     def contact_link(self) -> str:
@@ -257,13 +269,16 @@ class UserContactLink(_Base):
 # Group types
 # ---------------------------------------------------------------------------
 
+
 class GroupProfile(_Base):
     display_name: str = Field(alias="displayName")
     full_name: str = Field(default="", alias="fullName")
     short_descr: str | None = Field(default=None, alias="shortDescr")
     description: str | None = None
     image: str | None = None
-    group_preferences: dict[str, Any] | None = Field(default=None, alias="groupPreferences")
+    group_preferences: dict[str, Any] | None = Field(
+        default=None, alias="groupPreferences"
+    )
 
 
 class GroupSupportChat(_Base):
@@ -305,7 +320,9 @@ class GroupLink(_Base):
     user_contact_link_id: int = Field(alias="userContactLinkId")
     conn_link_contact: CreatedConnLink = Field(alias="connLinkContact")
     short_link_data_set: bool = Field(default=False, alias="shortLinkDataSet")
-    short_link_large_data_set: bool = Field(default=False, alias="shortLinkLargeDataSet")
+    short_link_large_data_set: bool = Field(
+        default=False, alias="shortLinkLargeDataSet"
+    )
     group_link_id: str = Field(alias="groupLinkId")
     accept_member_role: GroupMemberRole = Field(alias="acceptMemberRole")
 
@@ -322,6 +339,7 @@ class GroupInfoSummary(_Base):
 # ---------------------------------------------------------------------------
 # MsgContent discriminated union
 # ---------------------------------------------------------------------------
+
 
 class MsgContentText(_Base):
     type: Literal["text"] = "text"
@@ -390,6 +408,7 @@ MsgContent = Annotated[
 # Composed / Updated message
 # ---------------------------------------------------------------------------
 
+
 class ComposedMessage(_Base):
     file_source: CryptoFile | None = Field(default=None, alias="fileSource")
     quoted_item_id: int | None = Field(default=None, alias="quotedItemId")
@@ -406,6 +425,7 @@ class UpdatedMessage(_Base):
 # ChatRef helper
 # ---------------------------------------------------------------------------
 
+
 class ChatRef(_Base):
     chat_type: ChatType = Field(alias="chatType")
     chat_id: int = Field(alias="chatId")
@@ -419,6 +439,7 @@ class ChatRef(_Base):
 # ---------------------------------------------------------------------------
 # Chat item types
 # ---------------------------------------------------------------------------
+
 
 class FormattedText(_Base):
     text: str
@@ -463,7 +484,9 @@ class CIQuote(_Base):
     item_id: int | None = Field(default=None, alias="itemId")
     sent_at: str = Field(default="", alias="sentAt")
     content: dict[str, Any] = {}
-    formatted_text: list[FormattedText] | None = Field(default=None, alias="formattedText")
+    formatted_text: list[FormattedText] | None = Field(
+        default=None, alias="formattedText"
+    )
 
 
 class CIReactionCount(_Base):
@@ -482,7 +505,9 @@ class ChatItem(_Base):
     meta: CIMeta
     content: CIContent
     mentions: dict[str, CIMention] = {}
-    formatted_text: list[FormattedText] | None = Field(default=None, alias="formattedText")
+    formatted_text: list[FormattedText] | None = Field(
+        default=None, alias="formattedText"
+    )
     quoted_item: CIQuote | None = Field(default=None, alias="quotedItem")
     reactions: list[CIReactionCount] = []
     file: CIFile | None = None
@@ -508,6 +533,7 @@ class ChatItemDeletion(_Base):
 # MsgReaction
 # ---------------------------------------------------------------------------
 
+
 class MsgReaction(_Base):
     type: str
     emoji: str | None = None
@@ -516,6 +542,7 @@ class MsgReaction(_Base):
 # ---------------------------------------------------------------------------
 # File transfer types
 # ---------------------------------------------------------------------------
+
 
 class FileInvitation(_Base):
     file_name: str = Field(alias="fileName")
@@ -552,6 +579,7 @@ class RcvFileDescr(_Base):
 # ChatError
 # ---------------------------------------------------------------------------
 
+
 class ChatErrorType(_Base):
     type: str
 
@@ -566,6 +594,7 @@ class ChatError(_Base):
 # ---------------------------------------------------------------------------
 # ConnectionPlan
 # ---------------------------------------------------------------------------
+
 
 class ConnectionPlan(_Base):
     type: str
