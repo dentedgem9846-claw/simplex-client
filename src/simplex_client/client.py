@@ -43,9 +43,12 @@ class SimplexClient:
             ...
     """
 
-    def __init__(self, host: str = "localhost", port: int = 5225) -> None:
+    def __init__(
+        self, host: str = "localhost", port: int = 5225, *, command_timeout: float = 30.0
+    ) -> None:
         self.host = host
         self.port = port
+        self.command_timeout = command_timeout
         self.uri = f"ws://{host}:{port}"
         self._ws: websockets.asyncio.client.ClientConnection | None = None
         self._corr_id = 0
@@ -137,7 +140,11 @@ class SimplexClient:
         except Exception as exc:
             self._pending.pop(corr_id, None)
             raise SimplexConnectionError("send failed", exc) from exc
-        return await fut
+        try:
+            return await asyncio.wait_for(fut, timeout=self.command_timeout)
+        except asyncio.TimeoutError:
+            self._pending.pop(corr_id, None)
+            raise SimplexError(f"command timed out after {self.command_timeout}s")
 
     async def _listen(self) -> None:
         """Background loop: dispatch responses and events."""
