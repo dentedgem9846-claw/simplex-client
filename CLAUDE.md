@@ -52,18 +52,25 @@ bd close <id>         # Complete work
 
 ## Build & Test
 
-_Add your build and test commands here_
-
 ```bash
-# Example:
-# npm install
-# npm test
+pip install -e ".[dev]"
+pytest -m "not integration"
+pytest -m integration  # requires Docker
+ruff check src/ tests/
+mypy src/
 ```
 
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+Async Python client wrapping the SimpleX Chat CLI WebSocket API.
+
+Layers: `types.py` (Pydantic models) → `events.py` (event parsing with discriminated unions) → `commands.py` (command string builders) → `client.py` (WebSocket client with corrId correlation, reconnect, event dispatch) → `__init__.py` (public API).
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+- Python 3.10+, hatch build system
+- Pydantic v2 with `model_config = ConfigDict(extra="ignore")` on all types
+- `structlog` for structured logging, `websockets` for transport
+- Monotonic corrId counter for command/response correlation
+- Exponential backoff with jitter for reconnection (1s → 30s cap)
+- `ruff` for linting/formatting, `mypy --strict` for type checking

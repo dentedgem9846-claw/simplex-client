@@ -2,6 +2,14 @@
 
 Typed async Python client for the [SimpleX Chat CLI](https://github.com/simplex-chat/simplex-chat) WebSocket API.
 
+## Features
+
+- Typed Pydantic models for all SimpleX Chat API types
+- Async context manager with auto-reconnect
+- `corrId`-based command/response correlation
+- Event callback registration with `@client.on_event()`
+- Full support for contacts, groups, messages, files, and group links
+
 ## Installation
 
 ```bash
@@ -36,7 +44,11 @@ async def main():
         @client.on_event("newChatItems")
         async def on_message(event):
             for item in event.chat_items:
-                print(f"Received: {item.chat_item.content.text}")
+                ci = item.chat_item
+                if ci.content.type == "rcvMsgContent" and ci.content.text:
+                    chat_info = item.chat_info
+                    if chat_info.type == "direct":
+                        print(f"Received: {ci.content.text}")
 
         # Run with auto-reconnect
         await client.run()
