@@ -129,7 +129,8 @@ class SimplexClient:
             raise SimplexConnectionError("not connected")
         self._corr_id += 1
         corr_id = str(self._corr_id)
-        logger.debug("cmd.send", corr_id=corr_id, command=command[:100])
+        cmd_prefix = command.split(" ", 1)[0] if command else ""
+        logger.debug("cmd.send", corr_id=corr_id, command=cmd_prefix)
         loop = asyncio.get_running_loop()
         fut: asyncio.Future[dict[str, Any]] = loop.create_future()
         self._pending[corr_id] = fut
