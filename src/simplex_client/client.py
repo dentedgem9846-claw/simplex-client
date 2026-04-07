@@ -165,7 +165,10 @@ class SimplexClient:
                 else:
                     # Unsolicited event
                     logger.debug("event.received", type=resp.get("type", "unknown"))
-                    await self._dispatch_event(resp)
+                    try:
+                        await self._dispatch_event(resp)
+                    except Exception:
+                        logger.exception("event.dispatch_error", type=resp.get("type", "unknown"))
         except websockets.ConnectionClosed:
             if not self._closed:
                 raise
